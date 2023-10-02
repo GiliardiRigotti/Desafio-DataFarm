@@ -12,4 +12,6 @@ export const colors = {
     redLight: "#FF4D4D",
     gray: "#979cb0",
     grayLight: "#eef0f2",
+    orange: "#ffa634",
+    orangeLight: "#fec687",
 }

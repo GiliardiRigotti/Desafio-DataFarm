@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import * as Location from 'expo-location';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons'
-import { v4 as uuidv4 } from 'uuid';
 import Select from "../../components/Select";
 import { TextArea } from "../../components/TextArea";
 import { useApp } from "../../context/App";
@@ -11,9 +10,10 @@ import ListItems from "../../components/ItemList";
 import Button from "../../components/Button";
 import { IRegistry } from "../../interfaces/registry";
 import { Alert } from "react-native";
+import { Timer } from "../../components/Timer";
 
 
-export default function StopRecords() {
+export default function StopRecords({ navigation }) {
     const { resources, addRegistry } = useApp()
     const [location, setLocation] = useState(null);
     const [fieldsList, setFieldList] = useState<ISelect[]>([])
@@ -24,9 +24,11 @@ export default function StopRecords() {
         idReason: null,
         latitude: null,
         longitude: null,
-        minutes: null,
-        note: null,
-        uuid: uuidv4()
+        minutes: 10,
+        note: '',
+        uuid: null,
+        created: null,
+        sync: null
     })
 
     const farmsList = useMemo(() => {
@@ -68,22 +70,18 @@ export default function StopRecords() {
                 item.fields.map((item) => {
                     list.push(item)
                 })
-
             }
         })
         setFieldList(list)
     }
 
     function handleAddRegistry() {
-        if (formRegistry) {
-            Location.getCurrentPositionAsync({})
-                .then((location) => addRegistry({
-                    ...formRegistry,
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude
-                })).catch((error) => {
-                    Alert.alert('Aviso', error || 'Erro de obter a localização, verique se seu GPS esteja ligado')
-                })
+        if (!!formRegistry.idFarm && !!formRegistry.idField && !!formRegistry.idMachinery && !!formRegistry.idReason) {
+            addRegistry(formRegistry)
+            Alert.alert('Adicionado a parada')
+            navigation.navigate('Records')
+        } else {
+            Alert.alert('Aviso', 'Preencha Todos os campos por favor')
         }
     }
 
@@ -101,7 +99,7 @@ export default function StopRecords() {
             <ListItems list={reasonsList} title="Motivo" onChance={(value) => setFormRegistry({ ...formRegistry, idReason: value })} />
             <TextArea title="Nota de parada" />
             <Wrapper>
-                <Button title="Salvar" width={40} />
+                <Timer onChange={(value) => setFormRegistry({ ...formRegistry, minutes: value })} />
                 <Button title="Salvar" width={40} onPress={handleAddRegistry} />
             </Wrapper>
 

@@ -16,12 +16,13 @@ export interface IFarm {
     name: string
     growerId: number
     growerName: string
-    fields: IField[]
+    fields?: IField[]
 }
 
 export interface IField {
     id: number
     name: string
+    idFarm?: number
 }
 
 export interface IReason {

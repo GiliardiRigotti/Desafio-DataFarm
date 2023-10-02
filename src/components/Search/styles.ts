@@ -9,6 +9,7 @@ export const Container = styled.View`
     padding-left: 10px;
     border-radius: 5px;
     background-color: ${colors.grayLight};
+    margin-bottom: 10px;
 `;
 
 export const TextInput = styled.TextInput`

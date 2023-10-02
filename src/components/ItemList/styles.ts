@@ -4,8 +4,8 @@ import { colors } from '../../constants/colors';
 export const Container = styled.TouchableOpacity`
   margin-top: 10px;
   width: 80%;
-  border-bottom-width: 2px;
-  border-color: ${colors.grayLight};
+  height: 38%;
+  margin-bottom: 10px;
 `;
 
 export const Title = styled.Text`
@@ -26,12 +26,11 @@ export const ItemTitle = styled.Text`
 `;
 
 export const List = styled.FlatList`
-  margin-top: 10px;
-  width: 100%;
-  height: 38%;
-  padding-top: 20px;
-  padding: 10px;
   background-color: ${colors.white};
+  border-radius: 5px;
+`;
+
+export const Box = styled.View`
   border-width: 1px;
   border-radius: 5px;
   border-color: ${colors.gray};

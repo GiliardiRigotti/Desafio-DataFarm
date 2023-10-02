@@ -1,14 +1,20 @@
 import { Search } from "../../components/Search";
-import { Text, FlatList } from 'react-native'
-import { Container } from "./styles";
+import { Text } from 'react-native'
+import { Container, List } from "./styles";
 import { useApp } from "../../context/App";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { IRegistryItem } from "../../interfaces/registry";
+import { RegistryItem } from "../../components/RegistryItem";
+
+
 
 export default function Records() {
     const { registry, resources } = useApp()
+    const [list, setList] = useState<IRegistryItem[]>([])
+    const [search, setSearch] = useState<IRegistryItem[]>([])
 
-    const registryList = useMemo(() => {
-        const list = []
+    useEffect(() => {
+        const list: IRegistryItem[] = []
         registry?.forEach((item) => {
             const farm = resources?.farms.filter((itemFarm) => itemFarm.id == item.idFarm) || []
             const reason = resources?.reasons.filter((itemReason) => itemReason.id == item.idReason) || []
@@ -21,24 +27,24 @@ export default function Records() {
                     field: field[0],
                     machinerie: machinerie[0],
                     reason: reason[0],
-                    note: item.note
+                    note: item.note,
+                    minutes: item.minutes,
+                    created: item.created
                 })
             }
-
-
         })
-        return []
+        setList(list)
+        setSearch(list)
     }, [registry])
 
     return (
         <Container>
-            <Text>Registros</Text>
-            <Search registrys={[]} onChance={() => { }} />
-            <FlatList
-                data={registry}
+            <Search registrys={list} onChange={setSearch} />
+            <List
+                data={search}
                 keyExtractor={(item) => item.uuid}
                 renderItem={({ item }) => (
-                    <Text>{item.uuid}</Text>
+                    <RegistryItem data={item} />
                 )}
             />
         </Container>

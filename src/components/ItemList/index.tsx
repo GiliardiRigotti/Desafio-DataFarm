@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Container, ItemList, ItemTitle, List, Title } from "./styles";
+import { Box, Container, ItemList, ItemTitle, List, Title } from "./styles";
 import { ISelect } from "../../interfaces/select";
 import Svg, { Path } from "react-native-svg"
 import { colors } from "../../constants/colors";
+import { IconSvg } from "../IconSVG";
 
 interface Props {
     title: string
@@ -17,6 +18,7 @@ export default function ListItems({ title, list, width = 80, onChance }: Props) 
     const [selectedText, setSelectedText] = useState<string>()
 
     function handleSelected(item: ISelect) {
+        console.log(item.icon)
         onChance(item.id)
         setSelectedText(item.name)
         setSelect(!select)
@@ -27,27 +29,23 @@ export default function ListItems({ title, list, width = 80, onChance }: Props) 
                 <Title>
                     {title}
                 </Title>
-                <List
-                    data={list}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={({ item }) => (
-                        <ItemList style={{
-                            backgroundColor: item.name == selectedText ? colors.greenLight : "white"
-                        }} onPress={() => handleSelected(item)}>
-                            {
-                                item.icon &&
-                                <Svg
-                                    width={20}
-                                    height={20}
-                                    viewBox="0 0 20 20"
-                                >
-                                    <Path d={item.icon} fill="#000" />
-                                </Svg>
-                            }
-                            <ItemTitle>{item.name}</ItemTitle>
-                        </ItemList>
-                    )}
-                />
+                <Box>
+                    <List
+                        data={list}
+                        keyExtractor={(item) => item.id.toString()}
+                        renderItem={({ item }) => (
+                            <ItemList style={{
+                                backgroundColor: item.name == selectedText ? colors.greenLight : "white"
+                            }} onPress={() => handleSelected(item)}>
+                                {
+                                    item.icon &&
+                                    <IconSvg svg={item.icon} />
+                                }
+                                <ItemTitle>{item.name}</ItemTitle>
+                            </ItemList>
+                        )}
+                    />
+                </Box>
             </Container>
         </>
     )

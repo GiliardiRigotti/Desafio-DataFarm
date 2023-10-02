@@ -1,9 +1,20 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import * as Location from 'expo-location';
+import * as Crypto from 'expo-crypto';
+import NetInfo from '@react-native-community/netinfo';
 import { api, endpoints, idPartner } from "../services/api"
 import { IUser } from "../interfaces/user"
-import { IResources } from "../interfaces/resources"
+import { IFarm, IField, IResources } from "../interfaces/resources"
 import { IPartner } from "../interfaces/partner"
 import { IRegistry } from "../interfaces/registry"
+import { Alert } from "react-native";
+import { createTable, deleteAll, insert, select } from "../db/useDB";
+import { modelRegistry } from "../db/models/modelRegistry";
+import { modelFarm } from "../db/models/modelFarm";
+import { modelField } from "../db/models/modelField";
+import { modelMachinery } from "../db/models/modelMachinery";
+import { modelReason } from "../db/models/modelReason";
+import { modelUser } from "../db/models/modelUser";
 
 interface T extends React.Component {
     children: React.JSX.Element
@@ -36,6 +47,15 @@ interface IAppContext {
 const AppContext = createContext<IAppContext>(
     {} as IAppContext
 )
+
+const tablesDB = {
+    user: 'user',
+    farm: 'farm',
+    field: 'field',
+    reason: 'reason',
+    machinary: 'machinary',
+    registry: 'registry',
+}
 
 const AppProvider: React.FC<T> = ({ children }) => {
     const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -70,21 +90,155 @@ const AppProvider: React.FC<T> = ({ children }) => {
     const getData = useCallback(() => {
         api.get<IResponseGetData>(endpoints.resources)
             .then(({ data }) => {
+                deleteAll(tablesDB.farm)
+                deleteAll(tablesDB.field)
+                deleteAll(tablesDB.machinary)
+                deleteAll(tablesDB.reason)
+                deleteAll(tablesDB.user)
                 setUser(data.data.user)
                 setResources(data.data.resources)
+                insertDataInDatabase(data.data.resources)
+                insert(tablesDB.user, [
+                    { name: 'id', value: data.data.user.id },
+                    { name: 'name', value: data.data.user.name },
+                    { name: 'email', value: data.data.user.email },
+                    { name: 'accessToken', value: data.data.user.accessToken },
+                ])
+                    .then(() => { console.log('Registrado User no BD') })
+                    .catch(() => { console.log('Erro no BD') })
             })
             .catch((error) => console.log(error.response.data))
     }, [signIn])
 
+    const insertDataInDatabase = useCallback(async (data: IResources) => {
+
+        const farmData = data.farms
+        const machineryData = data.machineries
+        const reasonData = data.reasons
+
+        machineryData.forEach(async (machinery) => {
+            await insert(tablesDB.machinary, [
+                { name: 'id', value: machinery.id },
+                { name: 'name', value: machinery.name },
+                { name: 'serialNumber', value: machinery.serialNumber || 0 },
+            ])
+        })
+
+        reasonData.forEach(async (reason) => {
+            await insert(tablesDB.reason, [
+                { name: 'id', value: reason.id },
+                { name: 'name', value: reason.name },
+                { name: 'serialNumber', value: reason.icon },
+            ])
+        })
+
+        farmData.forEach(async (farm) => {
+            await insert(tablesDB.farm, [
+                { name: 'id', value: farm.id },
+                { name: 'name', value: farm.name },
+            ])
+            farm.fields?.forEach(async (field) => {
+                await insert(tablesDB.farm, [
+                    { name: 'id', value: field.id },
+                    { name: 'name', value: field.name },
+                    { name: 'idFarm', value: farm.id },
+                ])
+            })
+        })
+
+    }, [])
+
     const addRegistry = useCallback((newRegistry: IRegistry) => {
-        setRegistry(prev => [...prev, newRegistry])
+        const date = new Date().getTime()
+        console.log('Data', date)
+        Location.getCurrentPositionAsync({})
+            .then((location) => {
+                const data: IRegistry = {
+                    ...newRegistry, latitude: location.coords.latitude, longitude: location.coords.longitude, uuid: Crypto.randomUUID(), created: date, sync: 0
+                }
+                setRegistry(prev => [...prev, data])
+                insert(tablesDB.registry, [
+                    { name: 'uuid', value: data.uuid },
+                    { name: 'note', value: data.note },
+                    { name: 'idFarm', value: data.idFarm },
+                    { name: 'idField', value: data.idField },
+                    { name: 'idMachinery', value: data.idMachinery },
+                    { name: 'idReason', value: data.idReason },
+                    { name: 'minutes', value: data.minutes },
+                    { name: 'longitude', value: data.longitude },
+                    { name: 'latitude', value: data.latitude },
+                    { name: 'created', value: data.created || 0 },
+                    { name: 'sync', value: 0 }
+                ])
+                    .then(() => { console.log('Registrado no BD') })
+                    .catch(() => { console.log('Erro no BD') })
+                console.log("Cadastrado")
+            })
+            .catch((error) => {
+                Alert.alert('Aviso', error || 'Erro de obter a localização, verique se seu GPS esteja ligado')
+            })
     }, [])
 
     async function signOut(): Promise<void> {
         setAuthToken(undefined)
     }
 
+    async function createTables() {
+        await createTable(tablesDB.registry, modelRegistry)
+        await createTable(tablesDB.farm, modelFarm)
+        await createTable(tablesDB.field, modelField)
+        await createTable(tablesDB.machinary, modelMachinery)
+        await createTable(tablesDB.reason, modelReason)
+        await createTable(tablesDB.user, modelUser)
+    }
+
+    async function restoreDB() {
+        const registryDB = await select(tablesDB.registry)
+        const registryValues = registryDB[0].rows ? registryDB[0].rows : []
+        setRegistry(registryValues)
+
+        const farmDB = await select(tablesDB.farm)
+        const farmValues: IFarm[] = farmDB[0].rows ? farmDB[0].rows : []
+
+        const fieldDB = await select(tablesDB.field)
+        const fieldValues: IField[] = fieldDB[0].rows ? fieldDB[0].rows : []
+
+        const listFarm: IFarm[] = []
+        farmValues.forEach((itemFarm) => {
+            const listFields = fieldValues.filter((itemField) => itemField.idFarm == itemFarm.id)
+            listFarm.push({
+                fields: listFields,
+                ...itemFarm
+            })
+        })
+
+        const machineryDB = await select(tablesDB.machinary)
+        const machineryValues = machineryDB[0].rows ? machineryDB[0].rows : []
+
+        const reasonDB = await select(tablesDB.reason)
+        const reasonValues = reasonDB[0].rows ? reasonDB[0].rows : []
+
+        const userDB = await select(tablesDB.user)
+        const userValues = userDB[0].rows ? userDB[0].rows : []
+
+        const resourcesDB: IResources = {
+            farms: listFarm,
+            machineries: machineryValues,
+            reasons: reasonValues
+        }
+
+        setResources(resourcesDB)
+        setUser(userValues)
+    }
+
     useEffect(() => {
+        NetInfo.fetch().then(async (state) => {
+            console.log('Netinfo: ', state.isConnected)
+            if (!state.isConnected) {
+                restoreDB()
+            }
+        });
+        createTables()
 
     }, [])
 

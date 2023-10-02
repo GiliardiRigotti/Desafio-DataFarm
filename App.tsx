@@ -6,13 +6,19 @@ import { NotifierWrapper } from 'react-native-notifier';
 import { AppProvider } from './src/context/App';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaView } from 'react-native';
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <AppProvider>
-        <Routes />
-      </AppProvider>
-    </NavigationContainer>
+
+    <SafeAreaView style={{ flex: 1, paddingTop: 30 }}>
+      <StatusBar />
+      <NavigationContainer>
+        <AppProvider>
+          <Routes />
+        </AppProvider>
+      </NavigationContainer>
+    </SafeAreaView>
+
   );
 }
