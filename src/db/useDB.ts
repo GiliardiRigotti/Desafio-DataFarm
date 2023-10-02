@@ -59,7 +59,7 @@ const insert = async (tabName: string, columns: ColumnInsert[]) => {
             sql: query, args: []
         }], false
         )
-
+        console.log(result)
         return result
     } catch (e) {
         Alert.alert(`Error: ${e}`)
@@ -103,7 +103,7 @@ const update = async (tabName: string, columns: ColumnInsert[], id: number | str
             return `${column.name} = ${column.value}`
         })}
         WHERE
-        id = ${id}`
+        uiid = ${id}`
 
         const result = await db.execAsync([{
             sql: query, args: []

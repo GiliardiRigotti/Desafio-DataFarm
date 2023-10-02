@@ -15,7 +15,7 @@ export const Title = styled.Text`
 export const TextInput = styled.TextInput`
   margin-top: 10px;
   border-bottom-width: 2px;
-  border-color: ${colors.grayLight};
+  border-color: ${colors.gray};
   font-size: 14px;
   padding-left: 5px;
 `;

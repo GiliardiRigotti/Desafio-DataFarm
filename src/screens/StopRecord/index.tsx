@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import * as Location from 'expo-location';
 import Icon from '@expo/vector-icons/MaterialCommunityIcons'
+import NetInfo from '@react-native-community/netinfo';
 import Select from "../../components/Select";
 import { TextArea } from "../../components/TextArea";
 import { useApp } from "../../context/App";
-import { Container, Header, Title, Wrapper } from "./styles";
+import { Container, Header, Title, Wrapper, ButtonLogout } from "./styles";
 import { ISelect } from "../../interfaces/select";
 import ListItems from "../../components/ItemList";
 import Button from "../../components/Button";
@@ -14,8 +14,7 @@ import { Timer } from "../../components/Timer";
 
 
 export default function StopRecords({ navigation }) {
-    const { resources, addRegistry } = useApp()
-    const [location, setLocation] = useState(null);
+    const { resources, addRegistry, signOut, sync, registry } = useApp()
     const [fieldsList, setFieldList] = useState<ISelect[]>([])
     const [formRegistry, setFormRegistry] = useState<IRegistry>({
         idFarm: null,
@@ -85,10 +84,42 @@ export default function StopRecords({ navigation }) {
         }
     }
 
+    function handleSignOut() {
+        Alert.alert(
+            'Aviso',
+            'Tem certeza que vc quer deslogar?',
+            [
+                {
+                    text: 'Não',
+                    onPress: () => { },
+                    style: 'cancel',
+                },
+                {
+                    text: 'Sim',
+                    onPress: () => signOut(),
+                },
+            ],
+            { cancelable: false },
+        );
+    }
+
+    useEffect(() => {
+        NetInfo.fetch().then(async (state) => {
+            console.log('Netinfo: ', state.isConnected)
+            if (state.isConnected) {
+                sync()
+            }
+        });
+
+    }, [registry])
+
     return (
         <Container>
             <Header>
-                <Icon name="arrow-left" size={25} />
+                <ButtonLogout onPress={handleSignOut}>
+                    <Icon name="arrow-left" size={25} />
+                </ButtonLogout>
+
                 <Title>Registro de Parada</Title>
             </Header>
             <Select title="Equipamento" list={machineriesList} onChance={(value) => setFormRegistry({ ...formRegistry, idMachinery: value })} />

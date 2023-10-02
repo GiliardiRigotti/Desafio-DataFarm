@@ -27,4 +27,6 @@ export const Wrapper = styled.View`
   width: 80%;
 `;
 
+export const ButtonLogout = styled.TouchableOpacity`
 
+`;

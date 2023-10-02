@@ -26,9 +26,9 @@ export default function Input({ title, password = false, ...rest }: Props) {
                         <Button onPress={() => setHidePassword(!hidePassword)}>
                             {
                                 hidePassword ?
-                                    <Icon name="eye" size={30} color={colors.grayLight} />
+                                    <Icon name="eye" size={30} color={colors.gray} />
                                     :
-                                    <Icon name="eye-off" size={30} color={colors.grayLight} />
+                                    <Icon name="eye-off" size={30} color={colors.gray} />
                             }
 
                         </Button>

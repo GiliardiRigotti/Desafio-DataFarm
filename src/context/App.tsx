@@ -8,7 +8,7 @@ import { IFarm, IField, IResources } from "../interfaces/resources"
 import { IPartner } from "../interfaces/partner"
 import { IRegistry } from "../interfaces/registry"
 import { Alert } from "react-native";
-import { createTable, deleteAll, insert, select } from "../db/useDB";
+import { createTable, deleteAll, insert, select, update } from "../db/useDB";
 import { modelRegistry } from "../db/models/modelRegistry";
 import { modelFarm } from "../db/models/modelFarm";
 import { modelField } from "../db/models/modelField";
@@ -42,6 +42,7 @@ interface IAppContext {
     signIn: (email: string, password: string) => Promise<void>
     signOut: () => Promise<void>
     addRegistry: (newRegistry: IRegistry) => void
+    sync: () => void
 }
 
 const AppContext = createContext<IAppContext>(
@@ -59,7 +60,6 @@ const tablesDB = {
 
 const AppProvider: React.FC<T> = ({ children }) => {
     const [isLoading, setIsLoading] = useState<boolean>(false)
-    const [authToken, setAuthToken] = useState<string>()
     const [user, setUser] = useState<IUser>()
     const [partner, setPartner] = useState<IPartner>()
     const [resources, setResources] = useState<IResources>()
@@ -76,7 +76,6 @@ const AppProvider: React.FC<T> = ({ children }) => {
             })
             .then(({ data }) => {
                 api.defaults.headers.common.TokenAuthorization = data.data.token
-                setAuthToken(data.data.token)
                 getData()
             })
             .catch((error) => {
@@ -115,6 +114,7 @@ const AppProvider: React.FC<T> = ({ children }) => {
         const farmData = data.farms
         const machineryData = data.machineries
         const reasonData = data.reasons
+        console.log(reasonData)
 
         machineryData.forEach(async (machinery) => {
             await insert(tablesDB.machinary, [
@@ -128,7 +128,7 @@ const AppProvider: React.FC<T> = ({ children }) => {
             await insert(tablesDB.reason, [
                 { name: 'id', value: reason.id },
                 { name: 'name', value: reason.name },
-                { name: 'serialNumber', value: reason.icon },
+                { name: 'icon', value: reason.icon },
             ])
         })
 
@@ -138,7 +138,7 @@ const AppProvider: React.FC<T> = ({ children }) => {
                 { name: 'name', value: farm.name },
             ])
             farm.fields?.forEach(async (field) => {
-                await insert(tablesDB.farm, [
+                await insert(tablesDB.field, [
                     { name: 'id', value: field.id },
                     { name: 'name', value: field.name },
                     { name: 'idFarm', value: farm.id },
@@ -172,7 +172,12 @@ const AppProvider: React.FC<T> = ({ children }) => {
                 ])
                     .then(() => { console.log('Registrado no BD') })
                     .catch(() => { console.log('Erro no BD') })
-                console.log("Cadastrado")
+                NetInfo.fetch().then(async (state) => {
+                    console.log('Netinfo: ', state.isConnected)
+                    if (state.isConnected) {
+                        sync()
+                    }
+                });
             })
             .catch((error) => {
                 Alert.alert('Aviso', error || 'Erro de obter a localização, verique se seu GPS esteja ligado')
@@ -180,8 +185,43 @@ const AppProvider: React.FC<T> = ({ children }) => {
     }, [])
 
     async function signOut(): Promise<void> {
-        setAuthToken(undefined)
+        setUser(undefined)
+        deleteAll(tablesDB.farm)
+        deleteAll(tablesDB.field)
+        deleteAll(tablesDB.machinary)
+        deleteAll(tablesDB.reason)
+        deleteAll(tablesDB.user)
     }
+
+    const sync = useCallback(() => {
+        try {
+            const registryNoSync = registry.filter((registry) => registry.sync == 0)
+            registryNoSync.forEach(async (registry) => {
+                const data: IRegistry = {
+                    uuid: registry.uuid,
+                    idFarm: registry.idFarm,
+                    idField: registry.idField,
+                    idMachinery: registry.idMachinery,
+                    idReason: registry.idReason,
+                    latitude: registry.latitude,
+                    longitude: registry.longitude,
+                    minutes: registry.minutes,
+                    note: registry.note,
+                }
+                const response = await api.post(endpoints.registry, data)
+                console.log(response.data)
+                Alert.alert('Dados syncronizados')
+            })
+            registryNoSync.forEach(async (registry) => {
+                await update(tablesDB.registry, [
+                    { name: "sync", value: 1 }
+                ], registry.uuid)
+            })
+        } catch (error) {
+
+        }
+
+    }, [])
 
     async function createTables() {
         await createTable(tablesDB.registry, modelRegistry)
@@ -218,32 +258,32 @@ const AppProvider: React.FC<T> = ({ children }) => {
         const reasonDB = await select(tablesDB.reason)
         const reasonValues = reasonDB[0].rows ? reasonDB[0].rows : []
 
-        const userDB = await select(tablesDB.user)
-        const userValues = userDB[0].rows ? userDB[0].rows : []
-
         const resourcesDB: IResources = {
             farms: listFarm,
             machineries: machineryValues,
             reasons: reasonValues
         }
-
         setResources(resourcesDB)
-        setUser(userValues)
+
+    }
+
+    async function restoreSession() {
+        const userDB = await select(tablesDB.user)
+        const userValues: IUser[] = userDB[0].rows ? userDB[0].rows : null
+        api.defaults.headers.common.TokenAuthorization = userValues[0].accessToken
+        setUser(userValues[0])
     }
 
     useEffect(() => {
-        NetInfo.fetch().then(async (state) => {
-            console.log('Netinfo: ', state.isConnected)
-            if (!state.isConnected) {
-                restoreDB()
-            }
-        });
+        setIsLoading(true)
         createTables()
-
+        restoreDB()
+        restoreSession()
+        setIsLoading(false)
     }, [])
 
     return (
-        <AppContext.Provider value={{ isLoading, user, partner, resources, registry, signIn, signOut, addRegistry }}>
+        <AppContext.Provider value={{ isLoading, user, partner, resources, registry, signIn, signOut, addRegistry, sync }}>
             {children}
         </AppContext.Provider>
     )

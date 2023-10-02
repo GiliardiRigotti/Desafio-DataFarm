@@ -1,5 +1,5 @@
 export const modelRegistry = [
-    { name: 'uiid', type: 'TEXT' },
+    { name: 'uuid', type: 'TEXT' },
     { name: 'note', type: 'TEXT' },
     { name: 'idFarm', type: 'INTEGER' },
     { name: 'idField', type: 'INTEGER' },
@@ -9,5 +9,5 @@ export const modelRegistry = [
     { name: 'longitude', type: 'INTEGER' },
     { name: 'latitude', type: 'INTEGER' },
     { name: 'sync', type: 'INTEGER' },
-    { name: 'creates', type: 'INTEGER' },
+    { name: 'created', type: 'INTEGER' },
 ]

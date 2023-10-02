@@ -6,7 +6,8 @@ interface Props {
     data: IRegistryItem
 }
 export function RegistryItem({ data }: Props) {
-    const date = new Date(data.created)
+    const dataNumber = parseInt(data.created)
+    const date = new Date(dataNumber)
     const dateFormatted = `${date.getDate()}/${date.getMonth()}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`
     return (
         <Container>
