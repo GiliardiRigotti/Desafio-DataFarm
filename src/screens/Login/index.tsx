@@ -9,8 +9,8 @@ import { Container, Logo, SubTitle, Title, Wrapper } from "./styles";
 
 
 export default function Login() {
-    const [email, setEmail] = useState('giliardi.rigotti@gmail.com');
-    const [password, setPassword] = useState('7fc4XmUvB82rkD0T@s4Data@2023');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const { signIn, isLoading } = useApp();
 
     async function handleSignIn() {
