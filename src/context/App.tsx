@@ -173,7 +173,6 @@ const AppProvider: React.FC<T> = ({ children }) => {
                     .then(() => { console.log('Registrado no BD') })
                     .catch(() => { console.log('Erro no BD') })
                 NetInfo.fetch().then(async (state) => {
-                    console.log('Netinfo: ', state.isConnected)
                     if (state.isConnected) {
                         sync()
                     }
@@ -193,9 +192,11 @@ const AppProvider: React.FC<T> = ({ children }) => {
         deleteAll(tablesDB.user)
     }
 
-    const sync = useCallback(() => {
+    const sync = useCallback(async () => {
         try {
-            const registryNoSync = registry.filter((registry) => registry.sync == 0)
+            let status = ''
+            const registryNoSync = registry.filter((registry) => parseInt(registry.sync) == 0)
+            console.log(registryNoSync)
             registryNoSync.forEach(async (registry) => {
                 const data: IRegistry = {
                     uuid: registry.uuid,
@@ -209,14 +210,17 @@ const AppProvider: React.FC<T> = ({ children }) => {
                     note: registry.note,
                 }
                 const response = await api.post(endpoints.registry, data)
-                console.log(response.data)
-                Alert.alert('Dados syncronizados')
-            })
-            registryNoSync.forEach(async (registry) => {
+                console.log(response.data.data.status)
                 await update(tablesDB.registry, [
                     { name: "sync", value: 1 }
                 ], registry.uuid)
             })
+            const registryDB = await select(tablesDB.registry)
+            const registryValues = registryDB[0].rows ? registryDB[0].rows : []
+            console.log(registryValues)
+            setRegistry(registryValues)
+
+
         } catch (error) {
 
         }

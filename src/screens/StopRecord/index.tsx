@@ -111,7 +111,7 @@ export default function StopRecords({ navigation }) {
             }
         });
 
-    }, [registry])
+    }, [])
 
     return (
         <Container>

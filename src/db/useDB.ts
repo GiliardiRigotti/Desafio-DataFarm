@@ -103,13 +103,13 @@ const update = async (tabName: string, columns: ColumnInsert[], id: number | str
             return `${column.name} = ${column.value}`
         })}
         WHERE
-        uiid = ${id}`
+        uuid = "${id}"`
 
         const result = await db.execAsync([{
             sql: query, args: []
         }], false
         )
-
+        console.log(result)
         return result
     } catch (e) {
         Alert.alert(`Error: ${e}`)
