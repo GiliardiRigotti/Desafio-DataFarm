@@ -58,7 +58,7 @@ const tablesDB = {
     registry: 'registry',
 }
 
-const AppProvider: React.FC<T> = ({ children }) => {
+const AppProvider: React.FC<T> = ({ children }:React.ReactNode) => {
     const [isLoading, setIsLoading] = useState<boolean>(false)
     const [user, setUser] = useState<IUser>()
     const [partner, setPartner] = useState<IPartner>()
